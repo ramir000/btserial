@@ -62,7 +62,7 @@ public class BluetoothSerial extends CordovaPlugin {
     private CallbackContext deviceDiscoveredCallback;
 
     private BluetoothAdapter bluetoothAdapter;
-    private BluetoothSerialService bluetoothSerialService;
+    private HashMap<String,BluetoothSerialService> mbluetoothSerialService;
 
     // Debugging
     private static final String TAG = "BluetoothSerial";
@@ -91,15 +91,13 @@ public class BluetoothSerial extends CordovaPlugin {
 
     @Override
     public boolean execute(String action, CordovaArgs args, CallbackContext callbackContext) throws JSONException {
-
+        
         LOG.d(TAG, "action = " + action);
-
         if (bluetoothAdapter == null) {
             bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         }
-
-        if (bluetoothSerialService == null) {
-            bluetoothSerialService = new BluetoothSerialService(mHandler);
+        if (mbluetoothSerialService == null) {
+            mbluetoothSerialService = new HashMap<>();
         }
 
         boolean validAction = true;
@@ -122,13 +120,13 @@ public class BluetoothSerial extends CordovaPlugin {
         } else if (action.equals(DISCONNECT)) {
 
             connectCallback = null;
-            bluetoothSerialService.stop();
+            mbluetoothSerialService.get(args.getString(0)).stop();
             callbackContext.success();
 
         } else if (action.equals(WRITE)) {
 
             byte[] data = args.getArrayBuffer(0);
-            bluetoothSerialService.write(data);
+            mbluetoothSerialService.get(args.getString(1)).write(data);
             callbackContext.success();
 
         } else if (action.equals(AVAILABLE)) {
@@ -188,7 +186,7 @@ public class BluetoothSerial extends CordovaPlugin {
 
         } else if (action.equals(IS_CONNECTED)) {
 
-            if (bluetoothSerialService.getState() == BluetoothSerialService.STATE_CONNECTED) {
+            if (mbluetoothSerialService.get(args.getString(0)).getState() == BluetoothSerialService.STATE_CONNECTED) {
                 callbackContext.success();
             } else {
                 callbackContext.error("Not connected.");
@@ -273,8 +271,9 @@ public class BluetoothSerial extends CordovaPlugin {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (bluetoothSerialService != null) {
-            bluetoothSerialService.stop();
+        if (mbluetoothSerialService.values()  != null) {
+            for(BluetoothSerialService bt: mbluetoothSerialService.values())
+            bt.stop();
         }
     }
 
@@ -339,10 +338,15 @@ public class BluetoothSerial extends CordovaPlugin {
     private void connect(CordovaArgs args, boolean secure, CallbackContext callbackContext) throws JSONException {
         String macAddress = args.getString(0);
         BluetoothDevice device = bluetoothAdapter.getRemoteDevice(macAddress);
+        BluetoothSerialService bluetoothSerialService;
+        if (bluetoothSerialService == null) {
+            bluetoothSerialService = new BluetoothSerialService(mHandler);
+            mbluetoothSerialService.put(macAddress,bluetoothSerialService);
+        }
 
         if (device != null) {
             connectCallback = callbackContext;
-            bluetoothSerialService.connect(device, secure);
+            mbluetoothSerialService.get(args.getString(0)).connect(device, secure);
             buffer.setLength(0);
 
             PluginResult result = new PluginResult(PluginResult.Status.NO_RESULT);

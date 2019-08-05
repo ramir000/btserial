@@ -81,6 +81,5 @@
         <js-module src="src/browser/bluetoothSerial.js" name="BluetoothSerial_browser">
             <clobbers target="window.bluetoothSerial" />
         </js-module>
-
     </platform>
 </plugin>

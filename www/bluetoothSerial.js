@@ -11,7 +11,7 @@ module.exports = {
     },
 
     disconnect: function (success, failure) {
-        cordova.exec(success, failure, "BluetoothSerial", "disconnect", []);
+        cordova.exec(success, failure, "BluetoothSerial", "disconnect", [macAddress]);
     },
 
     // list bound devices
@@ -56,7 +56,7 @@ module.exports = {
             data = data.buffer;
         }
 
-        cordova.exec(success, failure, "BluetoothSerial", "write", [data]);
+        cordova.exec(success, failure, "BluetoothSerial", "write", [data, macAddress]);
     },
 
     // calls the success callback when new data is available
